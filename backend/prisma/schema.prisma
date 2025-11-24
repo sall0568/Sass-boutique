@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  CASHIER
+}
+
+enum MovementType {
+  IN
+  OUT
+  ADJUSTMENT
+}
+
+model Store {
+  id        String   @id @default(uuid())
+  name      String
+  address   String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users      User[]
+  products   Product[]
+  categories Category[]
+  sales      Sale[]
+  expenses   Expense[]
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(CASHIER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  storeId String?
+  store   Store?  @relation(fields: [storeId], references: [id])
+
+  sales    Sale[]
+  expenses Expense[]
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id])
+
+  products Product[]
+}
+
+model Product {
+  id            String   @id @default(uuid())
+  name          String
+  description   String?
+  price         Float
+  costPrice     Float    @default(0)
+  stockQuantity Int      @default(0)
+  sku           String?  @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id])
+
+  stockMovements StockMovement[]
+  saleItems      SaleItem[]
+}
+
+model StockMovement {
+  id        String       @id @default(uuid())
+  type      MovementType
+  quantity  Int
+  reason    String?
+  createdAt DateTime     @default(now())
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Sale {
+  id          String   @id @default(uuid())
+  totalAmount Float
+  createdAt   DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id])
+
+  items SaleItem[]
+}
+
+model SaleItem {
+  id        String @id @default(uuid())
+  quantity  Int
+  unitPrice Float
+
+  saleId String
+  sale   Sale   @relation(fields: [saleId], references: [id])
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  description String
+  amount      Float
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
